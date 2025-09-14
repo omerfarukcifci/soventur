@@ -204,33 +204,27 @@ app.use((req, res) => {
     return res.status(404).json({ error: 'API endpoint bulunamadı' });
   }
   
-  // Build dosyasının varlığını kontrol et - Vercel için farklı yollar dene
-  const possiblePaths = [
-    path.join(__dirname, 'build', 'index.html'),
-    path.join(process.cwd(), 'build', 'index.html'),
-    path.join(__dirname, '..', 'build', 'index.html'),
-    path.join(process.cwd(), '..', 'build', 'index.html')
-  ];
+  // Vercel'de build dosyası yolu - outputDirectory: "build" kullandığımız için
+  const indexPath = path.join(process.cwd(), 'build', 'index.html');
   
-  console.log('Looking for index.html in possible paths:');
-  possiblePaths.forEach((p, i) => {
-    console.log(`Path ${i + 1}: ${p}`);
-    console.log(`Exists: ${require('fs').existsSync(p)}`);
-  });
-  
+  console.log('Looking for index.html at:', indexPath);
   console.log('__dirname:', __dirname);
   console.log('process.cwd():', process.cwd());
-  console.log('Files in __dirname:', require('fs').readdirSync(__dirname));
+  console.log('Files in process.cwd():', require('fs').readdirSync(process.cwd()));
   
-  // İlk mevcut yolu bul
-  const indexPath = possiblePaths.find(p => require('fs').existsSync(p));
-  
-  if (!indexPath) {
-    console.error('index.html not found in any possible path');
+  if (!require('fs').existsSync(indexPath)) {
+    console.error('index.html not found at:', indexPath);
+    console.log('Available files in build directory:');
+    const buildDir = path.join(process.cwd(), 'build');
+    if (require('fs').existsSync(buildDir)) {
+      console.log(require('fs').readdirSync(buildDir));
+    } else {
+      console.log('Build directory does not exist');
+    }
     return res.status(500).send('Build files not found');
   }
   
-  console.log('Using index.html at:', indexPath);
+  console.log('Found index.html at:', indexPath);
   
   res.sendFile(indexPath, (err) => {
     if (err) {

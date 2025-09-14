@@ -33,7 +33,6 @@
     "pm2:stop": "pm2 stop soventur",
     "pm2:restart": "pm2 restart soventur",
     "pm2:logs": "pm2 logs soventur",
-    "vercel-build": "npm run build && echo 'Build completed'",
     "vercel-start": "node server.js"
   },
   "eslintConfig": {
