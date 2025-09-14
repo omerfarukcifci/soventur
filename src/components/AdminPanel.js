@@ -162,7 +162,7 @@ const AdminPanel = () => {
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        const response = await fetch('http://localhost:5001/api/customers');
+        const response = await fetch('/api/customers');
         if (response.ok) {
           const data = await response.json();
           setCustomers(data);

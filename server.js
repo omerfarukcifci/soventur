@@ -1,16 +1,13 @@
 const express = require('express');
-const multer = require('multer');
 const path = require('path');
 const cors = require('cors');
-const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-
 // CORS ayarları
 const allowedOrigins = process.env.NODE_ENV === 'production' 
-  ? ['https://soventur.com', 'https://www.soventur.com'] 
+  ? ['https://soventur.com', 'https://www.soventur.com', 'https://soventur.vercel.app'] 
   : ['http://localhost:3000', 'http://127.0.0.1:3000'];
 
 app.use(cors({
@@ -23,54 +20,13 @@ app.use(cors({
 // JSON parsing
 app.use(express.json());
 
-// Static dosyaları serve et
-app.use('/images', express.static(path.join(__dirname, 'public/images')));
-
 // React build dosyalarını serve et
 app.use(express.static(path.join(__dirname, 'build')));
 
-// Multer konfigürasyonu - dosya yükleme (Vercel için memory storage)
-const storage = multer.memoryStorage();
-
-const upload = multer({
-  storage: storage,
-  limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
-  },
-  fileFilter: (req, file, cb) => {
-    // Sadece resim dosyalarını kabul et
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Sadece resim dosyaları kabul edilir!'), false);
-    }
-  }
-});
-
-// Dosya yükleme endpoint'i
-app.post('/api/upload', upload.single('image'), (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'Dosya yüklenmedi' });
-    }
-
-    // Vercel'de dosya yazma yerine base64 döndür
-    const base64 = req.file.buffer.toString('base64');
-    const imageUrl = `data:${req.file.mimetype};base64,${base64}`;
-    
-    res.json({
-      success: true,
-      imageUrl: imageUrl,
-      filename: req.file.originalname,
-      originalName: req.file.originalname,
-      size: req.file.size
-    });
-  } catch (error) {
-    console.error('Dosya yükleme hatası:', error);
-    res.status(500).json({ error: 'Dosya yüklenirken hata oluştu' });
-  }
-});
-
+// Global müşteri verisi (Vercel için)
+if (!global.customers) {
+  global.customers = [];
+}
 
 // Müşteri kayıtlarını saklama endpoint'i
 app.post('/api/customers', (req, res) => {
@@ -80,11 +36,6 @@ app.post('/api/customers', (req, res) => {
       ...req.body,
       registrationDate: new Date().toISOString()
     };
-
-    // Vercel'de dosya yazma yerine memory'de tut
-    if (!global.customers) {
-      global.customers = [];
-    }
 
     global.customers.push(customerData);
 
@@ -107,16 +58,8 @@ app.post('/api/customers', (req, res) => {
 // Müşteri kayıtlarını getirme endpoint'i
 app.get('/api/customers', (req, res) => {
   try {
-    // Vercel'de memory'den oku
-    if (!global.customers) {
-      global.customers = [];
-    }
-
-    // Tarihe göre sırala (en yeni önce)
     const customers = global.customers.sort((a, b) => new Date(b.registrationDate) - new Date(a.registrationDate));
-
     res.json(customers);
-
   } catch (error) {
     console.error('Müşteri kayıtları getirme hatası:', error);
     res.status(500).json({
@@ -129,10 +72,6 @@ app.get('/api/customers', (req, res) => {
 
 // React uygulamasını serve et (SPA routing için)
 app.get('*', (req, res) => {
-  // API route'larını atla
-  if (req.path.startsWith('/api/')) {
-    return res.status(404).json({ error: 'API endpoint bulunamadı' });
-  }
   res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
@@ -143,6 +82,5 @@ module.exports = app;
 if (process.env.NODE_ENV !== 'production') {
   app.listen(PORT, () => {
     console.log(`Server http://localhost:${PORT} adresinde çalışıyor`);
-    console.log(`Dosya yükleme endpoint: http://localhost:${PORT}/api/upload`);
   });
 }
