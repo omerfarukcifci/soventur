@@ -1,0 +1,20 @@
+[
+  {
+    "id": "1757844311411",
+    "fullName": "Test Müşteri",
+    "email": "test@example.com",
+    "phone": "0555 123 45 67",
+    "tourType": "7 Günlük Umre Turu",
+    "message": "Test mesajı - Müşteri kayıt sistemi çalışıyor mu?",
+    "registrationDate": "2025-09-14T10:05:11.411Z"
+  },
+  {
+    "id": "1757844351823",
+    "fullName": "omer",
+    "email": "tst@gmail.com",
+    "phone": "23423424",
+    "tourType": "7 Günlük Umre Turu",
+    "message": "dsad",
+    "registrationDate": "2025-09-14T10:05:51.823Z"
+  }
+]

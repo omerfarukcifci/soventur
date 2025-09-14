@@ -1,0 +1,2 @@
+Server http://localhost:5000 adresinde çalışıyor
+Dosya yükleme endpoint: http://localhost:5000/api/upload
