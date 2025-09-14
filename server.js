@@ -3,6 +3,7 @@ const path = require('path');
 const cors = require('cors');
 const multer = require('multer');
 const { put } = require('@vercel/blob');
+const { sql } = require('@vercel/postgres');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -42,14 +43,44 @@ const upload = multer({
 // React build dosyalarını serve et
 app.use(express.static(path.join(__dirname, 'build')));
 
-// Global veriler (Vercel için)
-if (!global.customers) {
-  global.customers = [];
+// Vercel Postgres veritabanı tablolarını oluştur
+async function initializeDatabase() {
+  try {
+    // Tours tablosu
+    await sql`
+      CREATE TABLE IF NOT EXISTS tours (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        price DECIMAL(10,2),
+        duration VARCHAR(100),
+        image TEXT,
+        date VARCHAR(100),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+    
+    // Customers tablosu
+    await sql`
+      CREATE TABLE IF NOT EXISTS customers (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) NOT NULL,
+        phone VARCHAR(20),
+        tour_id INTEGER REFERENCES tours(id),
+        message TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+    
+    console.log('Database tables initialized successfully');
+  } catch (error) {
+    console.error('Database initialization error:', error);
+  }
 }
 
-if (!global.tours) {
-  global.tours = [];
-}
+// Veritabanını başlat
+initializeDatabase();
 
 // Dosya yükleme endpoint'i - Vercel Blob Storage ile
 app.post('/api/upload', async (req, res) => {
@@ -116,24 +147,27 @@ app.post('/api/upload', async (req, res) => {
 });
 
 // Tur yönetimi endpoint'leri
-app.get('/api/tours', (req, res) => {
+app.get('/api/tours', async (req, res) => {
   try {
-    res.json(global.tours);
+    const result = await sql`SELECT * FROM tours ORDER BY created_at DESC`;
+    res.json(result.rows);
   } catch (error) {
     console.error('Tur listesi getirme hatası:', error);
     res.status(500).json({ error: 'Tur listesi getirilirken hata oluştu' });
   }
 });
 
-app.post('/api/tours', (req, res) => {
+app.post('/api/tours', async (req, res) => {
   try {
-    const newTour = {
-      id: Date.now().toString(),
-      ...req.body,
-      createdAt: new Date().toISOString()
-    };
+    const { title, description, price, duration, image, date } = req.body;
     
-    global.tours.push(newTour);
+    const result = await sql`
+      INSERT INTO tours (title, description, price, duration, image, date)
+      VALUES (${title}, ${description}, ${price}, ${duration}, ${image}, ${date})
+      RETURNING *
+    `;
+    
+    const newTour = result.rows[0];
     
     res.json({
       success: true,
@@ -172,16 +206,15 @@ app.put('/api/tours/:id', (req, res) => {
   }
 });
 
-app.delete('/api/tours/:id', (req, res) => {
+app.delete('/api/tours/:id', async (req, res) => {
   try {
     const tourId = req.params.id;
-    const tourIndex = global.tours.findIndex(tour => tour.id === tourId);
     
-    if (tourIndex === -1) {
+    const result = await sql`DELETE FROM tours WHERE id = ${tourId} RETURNING *`;
+    
+    if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Tur bulunamadı' });
     }
-    
-    global.tours.splice(tourIndex, 1);
     
     res.json({
       success: true,
@@ -194,15 +227,17 @@ app.delete('/api/tours/:id', (req, res) => {
 });
 
 // Müşteri kayıtlarını saklama endpoint'i
-app.post('/api/customers', (req, res) => {
+app.post('/api/customers', async (req, res) => {
   try {
-    const customerData = {
-      id: Date.now().toString(),
-      ...req.body,
-      registrationDate: new Date().toISOString()
-    };
-
-    global.customers.push(customerData);
+    const { name, email, phone, tourId, message } = req.body;
+    
+    const result = await sql`
+      INSERT INTO customers (name, email, phone, tour_id, message)
+      VALUES (${name}, ${email}, ${phone}, ${tourId}, ${message})
+      RETURNING *
+    `;
+    
+    const customerData = result.rows[0];
 
     res.json({
       success: true,
@@ -221,10 +256,15 @@ app.post('/api/customers', (req, res) => {
 });
 
 // Müşteri kayıtlarını getirme endpoint'i
-app.get('/api/customers', (req, res) => {
+app.get('/api/customers', async (req, res) => {
   try {
-    const customers = global.customers.sort((a, b) => new Date(b.registrationDate) - new Date(a.registrationDate));
-    res.json(customers);
+    const result = await sql`
+      SELECT c.*, t.title as tour_title 
+      FROM customers c 
+      LEFT JOIN tours t ON c.tour_id = t.id 
+      ORDER BY c.created_at DESC
+    `;
+    res.json(result.rows);
   } catch (error) {
     console.error('Müşteri kayıtları getirme hatası:', error);
     res.status(500).json({
