@@ -29,93 +29,94 @@ const Tours = () => {
   const [currentSlide, setCurrentSlide] = useState({});
   const [tourCategories, setTourCategories] = useState([]);
 
-  // Local storage'dan turları yükle
+  // API'den turları yükle
   useEffect(() => {
-    const savedTours = localStorage.getItem('adminTours');
-    if (savedTours) {
-      const toursData = JSON.parse(savedTours);
-      
-      // Turları kategorilere göre grupla
-      const categories = {
-        umre: { id: 'umre', title: 'Umre Turları', tours: [] },
-        hac: { id: 'hac', title: 'Hac Turları', tours: [] },
-        yurtici: { id: 'yurtici', title: 'Yurtiçi Turlar', tours: [] },
-        yurtdisi: { id: 'yurtdisi', title: 'Yurtdışı Turlar', tours: [] }
-      };
+    const fetchTours = async () => {
+      try {
+        const response = await fetch('/api/tours');
+        if (response.ok) {
+          const toursData = await response.json();
+          
+          // Turları kategorilere göre grupla
+          const categories = {
+            umre: { id: 'umre', title: 'Umre Turları', tours: [] },
+            hac: { id: 'hac', title: 'Hac Turları', tours: [] },
+            yurtici: { id: 'yurtici', title: 'Yurtiçi Turlar', tours: [] },
+            yurtdisi: { id: 'yurtdisi', title: 'Yurtdışı Turlar', tours: [] }
+          };
 
-        toursData.forEach(tour => {
-          if (categories[tour.category]) {
-            categories[tour.category].tours.push({
-              name: tour.title,
-              date: tour.startDate && tour.endDate 
-                ? `${new Date(tour.startDate).toLocaleDateString('tr-TR')} - ${new Date(tour.endDate).toLocaleDateString('tr-TR')}`
-                : tour.startDate || 'Tarih belirtilmemiş',
-              startDate: tour.startDate, // Tarih filtresi için
-              price: tour.price,
-              image: tour.image,
-              description: tour.description
-            });
-          }
-        });
-
-      setTourCategories(Object.values(categories).filter(cat => cat.tours.length > 0));
-    } else {
-      // Varsayılan turlar
-      const defaultCategories = [
-        {
-          id: 'umre',
-          title: 'Umre Turları',
-          tours: [
-            { 
-              name: '7 Günlük Umre Turu', 
-              date: '15.03.2024 - 22.03.2024', 
-              price: '₺8,500',
-              image: 'https://images.unsplash.com/photo-1542816417-0983c9c9ad53?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80',
-              description: 'Mekke ve Medine ziyareti, konaklama dahil'
+          toursData.forEach(tour => {
+            // Kategori belirleme (title'a göre)
+            let category = 'umre'; // varsayılan
+            if (tour.title.toLowerCase().includes('hac')) {
+              category = 'hac';
+            } else if (tour.title.toLowerCase().includes('istanbul') || 
+                      tour.title.toLowerCase().includes('bursa') || 
+                      tour.title.toLowerCase().includes('konya')) {
+              category = 'yurtici';
+            } else if (tour.title.toLowerCase().includes('endülüs') || 
+                      tour.title.toLowerCase().includes('bosna')) {
+              category = 'yurtdisi';
             }
-          ]
+
+            if (categories[category]) {
+              categories[category].tours.push({
+                name: tour.title,
+                date: tour.date || 'Tarih belirtilmemiş',
+                startDate: tour.date, // Tarih filtresi için
+                price: `₺${tour.price?.toLocaleString() || '0'}`,
+                image: tour.image,
+                description: tour.description
+              });
+            }
+          });
+
+          setTourCategories(Object.values(categories).filter(cat => cat.tours.length > 0));
+        } else {
+          // Fallback: Varsayılan turlar
+          const defaultCategories = [
+            {
+              id: 'umre',
+              title: 'Umre Turları',
+              tours: [
+                { 
+                  name: '7 Günlük Umre Turu', 
+                  date: '15.03.2024 - 22.03.2024', 
+                  price: '₺8,500',
+                  image: 'https://images.unsplash.com/photo-1542816417-0983c9c9ad53?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80',
+                  description: 'Mekke ve Medine ziyareti, konaklama dahil'
+                }
+              ]
+            }
+          ];
+          setTourCategories(defaultCategories);
         }
-      ];
-      setTourCategories(defaultCategories);
-    }
-  }, []);
-
-  // Local storage değişikliklerini dinle
-  useEffect(() => {
-    const handleStorageChange = () => {
-      const savedTours = localStorage.getItem('adminTours');
-      if (savedTours) {
-        const toursData = JSON.parse(savedTours);
-        
-        const categories = {
-          umre: { id: 'umre', title: 'Umre Turları', tours: [] },
-          hac: { id: 'hac', title: 'Hac Turları', tours: [] },
-          yurtici: { id: 'yurtici', title: 'Yurtiçi Turlar', tours: [] },
-          yurtdisi: { id: 'yurtdisi', title: 'Yurtdışı Turlar', tours: [] }
-        };
-
-        toursData.forEach(tour => {
-          if (categories[tour.category]) {
-            categories[tour.category].tours.push({
-              name: tour.title,
-              date: tour.startDate && tour.endDate 
-                ? `${new Date(tour.startDate).toLocaleDateString('tr-TR')} - ${new Date(tour.endDate).toLocaleDateString('tr-TR')}`
-                : tour.startDate || 'Tarih belirtilmemiş',
-              startDate: tour.startDate, // Tarih filtresi için
-              price: tour.price,
-              image: tour.image,
-              description: tour.description
-            });
+      } catch (error) {
+        console.error('Tur verileri yüklenemedi:', error);
+        // Fallback: Varsayılan turlar
+        const defaultCategories = [
+          {
+            id: 'umre',
+            title: 'Umre Turları',
+            tours: [
+              { 
+                name: '7 Günlük Umre Turu', 
+                date: '15.03.2024 - 22.03.2024', 
+                price: '₺8,500',
+                image: 'https://images.unsplash.com/photo-1542816417-0983c9c9ad53?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80',
+                description: 'Mekke ve Medine ziyareti, konaklama dahil'
+              }
+            ]
           }
-        });
-
-        setTourCategories(Object.values(categories).filter(cat => cat.tours.length > 0));
+        ];
+        setTourCategories(defaultCategories);
       }
     };
 
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    fetchTours();
   }, []);
+
+  // Artık localStorage dinlemiyoruz, API'den veri alıyoruz
 
   const filters = [
     { id: 'all', label: 'Tümü' },

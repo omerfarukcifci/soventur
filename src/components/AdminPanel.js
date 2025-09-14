@@ -134,19 +134,12 @@ const AdminPanel = () => {
           const data = await response.json();
           setTours(data);
         } else {
-          // Fallback: localStorage'dan yükle
-          const savedTours = localStorage.getItem('adminTours');
-          if (savedTours) {
-            setTours(JSON.parse(savedTours));
-          }
+          console.error('Tur verileri yüklenemedi:', response.status);
+          setTours([]);
         }
       } catch (error) {
         console.error('Tur verileri yüklenemedi:', error);
-        // Fallback: localStorage'dan yükle
-        const savedTours = localStorage.getItem('adminTours');
-        if (savedTours) {
-          setTours(JSON.parse(savedTours));
-        }
+        setTours([]);
       }
     };
 
@@ -281,9 +274,12 @@ const AdminPanel = () => {
         
         if (response.ok) {
           const result = await response.json();
-          setTours(tours.map(tour => 
-            tour.id === formData.id ? result.tour : tour
-          ));
+          // API'den güncel listeyi çek
+          const toursResponse = await fetch('/api/tours');
+          if (toursResponse.ok) {
+            const updatedTours = await toursResponse.json();
+            setTours(updatedTours);
+          }
           setSuccessMessage('Tur başarıyla güncellendi!');
         } else {
           throw new Error('Tur güncellenemedi');
@@ -300,7 +296,12 @@ const AdminPanel = () => {
         
         if (response.ok) {
           const result = await response.json();
-          setTours([...tours, result.tour]);
+          // API'den güncel listeyi çek
+          const toursResponse = await fetch('/api/tours');
+          if (toursResponse.ok) {
+            const updatedTours = await toursResponse.json();
+            setTours(updatedTours);
+          }
           setSuccessMessage('Tur başarıyla eklendi!');
         } else {
           throw new Error('Tur eklenemedi');
@@ -347,7 +348,12 @@ const AdminPanel = () => {
         });
         
         if (response.ok) {
-          setTours(tours.filter(tour => tour.id !== tourId));
+          // API'den güncel listeyi çek
+          const toursResponse = await fetch('/api/tours');
+          if (toursResponse.ok) {
+            const updatedTours = await toursResponse.json();
+            setTours(updatedTours);
+          }
           setSuccessMessage('Tur başarıyla silindi!');
           setTimeout(() => setSuccessMessage(''), 3000);
         } else {

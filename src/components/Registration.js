@@ -70,19 +70,27 @@ const Registration = () => {
     'Bosna Hersek Turu'
   ]);
 
-  // Admin panelinden eklenen turları yükle
+  // Admin panelinden eklenen turları API'den yükle
   useEffect(() => {
-    const savedTours = localStorage.getItem('adminTours');
-    if (savedTours) {
-      const toursData = JSON.parse(savedTours);
-      const adminTourNames = toursData.map(tour => tour.title);
-      
-      // Admin turlarını mevcut listeye ekle (duplicate'leri önle)
-      setTourTypes(prev => {
-        const combined = [...prev, ...adminTourNames];
-        return [...new Set(combined)]; // Duplicate'leri kaldır
-      });
-    }
+    const fetchTours = async () => {
+      try {
+        const response = await fetch('/api/tours');
+        if (response.ok) {
+          const toursData = await response.json();
+          const adminTourNames = toursData.map(tour => tour.title);
+          
+          // Admin turlarını mevcut listeye ekle (duplicate'leri önle)
+          setTourTypes(prev => {
+            const combined = [...prev, ...adminTourNames];
+            return [...new Set(combined)]; // Duplicate'leri kaldır
+          });
+        }
+      } catch (error) {
+        console.error('Tur verileri yüklenemedi:', error);
+      }
+    };
+
+    fetchTours();
   }, []);
 
   const handleChange = (e) => {
