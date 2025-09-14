@@ -158,8 +158,13 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
-// Server'ı başlat
-app.listen(PORT, () => {
-  console.log(`Server http://localhost:${PORT} adresinde çalışıyor`);
-  console.log(`Dosya yükleme endpoint: http://localhost:${PORT}/api/upload`);
-});
+// Vercel için export
+module.exports = app;
+
+// Sadece local'de server'ı başlat
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`Server http://localhost:${PORT} adresinde çalışıyor`);
+    console.log(`Dosya yükleme endpoint: http://localhost:${PORT}/api/upload`);
+  });
+}
