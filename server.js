@@ -70,13 +70,19 @@ app.post('/api/upload', async (req, res) => {
       return res.status(400).json({ error: 'Geçersiz resim formatı' });
     }
     
-    // Dosya boyutu kontrolü (Blob Storage için 4.5MB limit)
+    // Dosya boyutu kontrolü (Blob Storage için 5MB limit)
     const base64Size = imageData.length;
-    const maxSize = 4.5 * 1024 * 1024; // 4.5MB
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    
+    console.log('Dosya boyutu kontrolü:');
+    console.log('Base64 size:', base64Size, 'bytes');
+    console.log('Max size:', maxSize, 'bytes');
+    console.log('Size in KB:', Math.round(base64Size / 1024), 'KB');
+    console.log('Size in MB:', Math.round(base64Size / 1024 / 1024 * 100) / 100, 'MB');
     
     if (base64Size > maxSize) {
       return res.status(413).json({ 
-        error: `Dosya boyutu çok büyük. Maksimum 4MB resim yükleyebilirsiniz. (Mevcut: ${Math.round(base64Size / 1024)}KB)` 
+        error: `Dosya boyutu çok büyük. Maksimum 5MB resim yükleyebilirsiniz. (Mevcut: ${Math.round(base64Size / 1024)}KB)` 
       });
     }
     

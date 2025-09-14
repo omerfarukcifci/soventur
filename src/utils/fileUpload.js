@@ -56,14 +56,14 @@ export const formatFileSize = (bytes) => {
 // Dosya tipini kontrol et
 export const validateImageFile = (file) => {
   const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-  const maxSize = 4 * 1024 * 1024; // 4MB (Vercel Blob Storage için)
+  const maxSize = 5 * 1024 * 1024; // 5MB (Vercel Blob Storage için)
   
   if (!allowedTypes.includes(file.type)) {
     return { valid: false, message: 'Sadece JPEG, PNG, GIF ve WebP formatları desteklenir.' };
   }
   
   if (file.size > maxSize) {
-    return { valid: false, message: 'Dosya boyutu 4MB\'dan küçük olmalıdır. (Vercel Blob Storage limiti)' };
+    return { valid: false, message: 'Dosya boyutu 5MB\'dan küçük olmalıdır. (Vercel Blob Storage limiti)' };
   }
   
   return { valid: true, message: 'Dosya geçerli.' };

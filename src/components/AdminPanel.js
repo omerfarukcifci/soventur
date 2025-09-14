@@ -203,6 +203,10 @@ const AdminPanel = () => {
         setImagePreview(imageData);
         
         console.log('Dosya yükleniyor:', file.name);
+        console.log('Orijinal dosya boyutu:', file.size, 'bytes');
+        console.log('Base64 boyutu:', imageData.length, 'bytes');
+        console.log('Base64 boyutu (KB):', Math.round(imageData.length / 1024), 'KB');
+        console.log('Base64 boyutu (MB):', Math.round(imageData.length / 1024 / 1024 * 100) / 100, 'MB');
         
         const response = await fetch('/api/upload', {
           method: 'POST',
