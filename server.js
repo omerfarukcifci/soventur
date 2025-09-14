@@ -76,7 +76,8 @@ async function writeDataFile(filename, data) {
     
     const blob = await put(filename, jsonString, {
       access: 'public',
-      contentType: 'application/json'
+      contentType: 'application/json',
+      allowOverwrite: true
     });
     
     console.log(`Data file ${filename} updated successfully:`, blob.url);
