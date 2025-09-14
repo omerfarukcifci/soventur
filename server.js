@@ -19,8 +19,8 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// JSON parsing
-app.use(express.json());
+// JSON parsing - Vercel için büyük dosyalar için limit artırıldı
+app.use(express.json({ limit: '10mb' }));
 
 // Multer konfigürasyonu - Vercel için memory storage
 const storage = multer.memoryStorage();
@@ -70,9 +70,9 @@ app.post('/api/upload', async (req, res) => {
       return res.status(400).json({ error: 'Geçersiz resim formatı' });
     }
     
-    // Dosya boyutu kontrolü (Blob Storage için 5MB limit)
+    // Dosya boyutu kontrolü (Vercel Blob Storage için 5MB limit)
     const base64Size = imageData.length;
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    const maxSize = 5 * 1024 * 1024; // 5MB (Vercel Blob Storage limiti)
     
     console.log('Dosya boyutu kontrolü:');
     console.log('Base64 size:', base64Size, 'bytes');
