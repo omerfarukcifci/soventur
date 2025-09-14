@@ -204,11 +204,33 @@ app.use((req, res) => {
     return res.status(404).json({ error: 'API endpoint bulunamadı' });
   }
   
-  // Build dosyasının varlığını kontrol et
-  const indexPath = path.join(__dirname, 'build', 'index.html');
-  console.log('Looking for index.html at:', indexPath);
+  // Build dosyasının varlığını kontrol et - Vercel için farklı yollar dene
+  const possiblePaths = [
+    path.join(__dirname, 'build', 'index.html'),
+    path.join(process.cwd(), 'build', 'index.html'),
+    path.join(__dirname, '..', 'build', 'index.html'),
+    path.join(process.cwd(), '..', 'build', 'index.html')
+  ];
+  
+  console.log('Looking for index.html in possible paths:');
+  possiblePaths.forEach((p, i) => {
+    console.log(`Path ${i + 1}: ${p}`);
+    console.log(`Exists: ${require('fs').existsSync(p)}`);
+  });
+  
   console.log('__dirname:', __dirname);
+  console.log('process.cwd():', process.cwd());
   console.log('Files in __dirname:', require('fs').readdirSync(__dirname));
+  
+  // İlk mevcut yolu bul
+  const indexPath = possiblePaths.find(p => require('fs').existsSync(p));
+  
+  if (!indexPath) {
+    console.error('index.html not found in any possible path');
+    return res.status(500).send('Build files not found');
+  }
+  
+  console.log('Using index.html at:', indexPath);
   
   res.sendFile(indexPath, (err) => {
     if (err) {
