@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const cors = require('cors');
 const multer = require('multer');
+const { put } = require('@vercel/blob');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -50,14 +51,14 @@ if (!global.tours) {
   global.tours = [];
 }
 
-// Dosya yükleme endpoint'i - Vercel için düzeltildi
-app.post('/api/upload', (req, res) => {
+// Dosya yükleme endpoint'i - Vercel Blob Storage ile
+app.post('/api/upload', async (req, res) => {
   try {
     console.log('Upload endpoint called');
     console.log('Content-Type:', req.headers['content-type']);
     console.log('Body keys:', Object.keys(req.body));
     
-    // Vercel'de Multer çalışmıyor, base64 ile çalışalım
+    // Base64 verisini al
     const { imageData } = req.body;
     
     if (!imageData) {
@@ -69,22 +70,38 @@ app.post('/api/upload', (req, res) => {
       return res.status(400).json({ error: 'Geçersiz resim formatı' });
     }
     
-    // Dosya boyutu kontrolü (base64 için ~1.3MB limit)
+    // Dosya boyutu kontrolü (Blob Storage için 4.5MB limit)
     const base64Size = imageData.length;
-    const maxSize = 1.3 * 1024 * 1024; // 1.3MB
+    const maxSize = 4.5 * 1024 * 1024; // 4.5MB
     
     if (base64Size > maxSize) {
       return res.status(413).json({ 
-        error: `Dosya boyutu çok büyük. Maksimum 1MB resim yükleyebilirsiniz. (Mevcut: ${Math.round(base64Size / 1024)}KB)` 
+        error: `Dosya boyutu çok büyük. Maksimum 4MB resim yükleyebilirsiniz. (Mevcut: ${Math.round(base64Size / 1024)}KB)` 
       });
     }
     
+    // Base64'ü buffer'a çevir
+    const base64Data = imageData.split(',')[1];
+    const buffer = Buffer.from(base64Data, 'base64');
+    
+    // Dosya adını oluştur
+    const timestamp = Date.now();
+    const filename = `tour_${timestamp}.jpg`;
+    
+    // Vercel Blob Storage'a yükle
+    const blob = await put(filename, buffer, {
+      access: 'public',
+      contentType: 'image/jpeg'
+    });
+    
+    console.log('Blob uploaded successfully:', blob.url);
+    
     res.json({
       success: true,
-      imageUrl: imageData,
-      filename: 'uploaded_image.jpg',
-      originalName: 'uploaded_image.jpg',
-      size: imageData.length
+      imageUrl: blob.url,
+      filename: filename,
+      originalName: filename,
+      size: buffer.length
     });
   } catch (error) {
     console.error('Dosya yükleme hatası:', error);
