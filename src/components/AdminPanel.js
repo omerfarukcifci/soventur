@@ -68,6 +68,7 @@ const AdminPanel = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [error, setError] = useState('');
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
   const [uploading, setUploading] = useState(false);
