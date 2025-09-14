@@ -194,8 +194,12 @@ app.get('/api/customers', (req, res) => {
   }
 });
 
-// React uygulamasını serve et (SPA routing için)
-app.use((req, res) => {
+// React uygulamasını serve et (SPA routing için) - API route'larından sonra
+app.get('*', (req, res) => {
+  // API route'larını atla
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: 'API endpoint bulunamadı' });
+  }
   res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 

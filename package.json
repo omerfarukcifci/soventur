@@ -32,7 +32,9 @@
     "pm2:start": "pm2 start ecosystem.config.js --env production",
     "pm2:stop": "pm2 stop soventur",
     "pm2:restart": "pm2 restart soventur",
-    "pm2:logs": "pm2 logs soventur"
+    "pm2:logs": "pm2 logs soventur",
+    "vercel-build": "npm run build",
+    "vercel-start": "node server.js"
   },
   "eslintConfig": {
     "extends": [
