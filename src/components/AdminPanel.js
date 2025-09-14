@@ -190,13 +190,6 @@ const AdminPanel = () => {
 
     setImageFile(file);
     
-    // Önizleme oluştur
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setImagePreview(e.target.result);
-    };
-    reader.readAsDataURL(file);
-
     // Gerçek dosya yükleme - Vercel için base64 ile
     setUploading(true);
     
@@ -205,6 +198,9 @@ const AdminPanel = () => {
     reader.onload = async (e) => {
       try {
         const imageData = e.target.result;
+        
+        // Önizleme oluştur
+        setImagePreview(imageData);
         
         console.log('Dosya yükleniyor:', file.name);
         
