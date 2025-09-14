@@ -48,6 +48,11 @@ const DATA_FILES = {
   customers: 'data/customers.json'
 };
 
+// Blob Storage token kontrolü
+console.log('Blob Storage token check:');
+console.log('BLOB_READ_WRITE_TOKEN exists:', !!process.env.BLOB_READ_WRITE_TOKEN);
+console.log('BLOB_READ_WRITE_TOKEN length:', process.env.BLOB_READ_WRITE_TOKEN?.length || 0);
+
 // Veri dosyasını oku
 async function readDataFile(filename) {
   try {
@@ -63,15 +68,26 @@ async function readDataFile(filename) {
 // Veri dosyasını yaz
 async function writeDataFile(filename, data) {
   try {
+    console.log(`Writing data file: ${filename}`);
+    console.log(`Data length: ${data.length} items`);
+    
     const jsonString = JSON.stringify(data, null, 2);
+    console.log(`JSON string length: ${jsonString.length} characters`);
+    
     const blob = await put(filename, jsonString, {
       access: 'public',
       contentType: 'application/json'
     });
-    console.log(`Data file ${filename} updated successfully`);
+    
+    console.log(`Data file ${filename} updated successfully:`, blob.url);
     return blob;
   } catch (error) {
     console.error(`Error writing data file ${filename}:`, error);
+    console.error(`Error details:`, {
+      message: error.message,
+      code: error.code,
+      status: error.status
+    });
     throw error;
   }
 }
@@ -153,10 +169,15 @@ app.get('/api/tours', async (req, res) => {
 
 app.post('/api/tours', async (req, res) => {
   try {
+    console.log('Tour creation started');
     const { title, description, price, duration, image, date } = req.body;
     
+    console.log('Tour data received:', { title, description, price, duration, image, date });
+    
     // Mevcut turları oku
+    console.log('Reading existing tours...');
     const tours = await readDataFile(DATA_FILES.tours);
+    console.log(`Found ${tours.length} existing tours`);
     
     // Yeni tur oluştur
     const newTour = {
@@ -170,9 +191,15 @@ app.post('/api/tours', async (req, res) => {
       createdAt: new Date().toISOString()
     };
     
+    console.log('New tour created:', newTour);
+    
     // Turları güncelle
     tours.push(newTour);
+    console.log(`Total tours after adding: ${tours.length}`);
+    
+    console.log('Writing tours to Blob Storage...');
     await writeDataFile(DATA_FILES.tours, tours);
+    console.log('Tours written successfully');
     
     res.json({
       success: true,
@@ -181,7 +208,11 @@ app.post('/api/tours', async (req, res) => {
     });
   } catch (error) {
     console.error('Tur ekleme hatası:', error);
-    res.status(500).json({ error: 'Tur eklenirken hata oluştu' });
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ 
+      error: 'Tur eklenirken hata oluştu',
+      details: error.message 
+    });
   }
 });
 
