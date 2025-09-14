@@ -124,38 +124,32 @@ const AdminPanel = () => {
     });
   };
 
-  // Local storage'dan turları yükle
+  // Tur verilerini yükle
   useEffect(() => {
-    const savedTours = localStorage.getItem('adminTours');
-    if (savedTours) {
-      setTours(JSON.parse(savedTours));
-    } else {
-      // Varsayılan turlar
-      const defaultTours = [
-        {
-          id: 1,
-          category: 'umre',
-          title: '7 Günlük Umre Turu',
-          image: 'https://images.unsplash.com/photo-1542816417-0983c9c9ad53?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80',
-          startDate: '2024-03-15',
-          endDate: '2024-03-22',
-          price: '₺8,500',
-          description: 'Mekke ve Medine ziyareti, konaklama dahil'
-        },
-        {
-          id: 2,
-          category: 'hac',
-          title: 'Hac Turu 2024',
-          image: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80',
-          startDate: '2024-06-15',
-          endDate: '2024-06-30',
-          price: '₺35,000',
-          description: 'Standart hac turu, tüm hizmetler dahil'
+    const fetchTours = async () => {
+      try {
+        const response = await fetch('/api/tours');
+        if (response.ok) {
+          const data = await response.json();
+          setTours(data);
+        } else {
+          // Fallback: localStorage'dan yükle
+          const savedTours = localStorage.getItem('adminTours');
+          if (savedTours) {
+            setTours(JSON.parse(savedTours));
+          }
         }
-      ];
-      setTours(defaultTours);
-      localStorage.setItem('adminTours', JSON.stringify(defaultTours));
-    }
+      } catch (error) {
+        console.error('Tur verileri yüklenemedi:', error);
+        // Fallback: localStorage'dan yükle
+        const savedTours = localStorage.getItem('adminTours');
+        if (savedTours) {
+          setTours(JSON.parse(savedTours));
+        }
+      }
+    };
+
+    fetchTours();
   }, []);
 
   // Müşteri verilerini yükle
@@ -264,47 +258,70 @@ const AdminPanel = () => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (isEditMode) {
-      // Düzenleme
-      const updatedTours = tours.map(tour => 
-        tour.id === formData.id ? formData : tour
-      );
-      setTours(updatedTours);
-      localStorage.setItem('adminTours', JSON.stringify(updatedTours));
-      setSuccessMessage('Tur başarıyla güncellendi!');
-    } else {
-      // Yeni ekleme
-      const newTour = {
-        ...formData,
-        id: Date.now()
-      };
-      const updatedTours = [...tours, newTour];
-      setTours(updatedTours);
-      localStorage.setItem('adminTours', JSON.stringify(updatedTours));
-      setSuccessMessage('Tur başarıyla eklendi!');
+    try {
+      if (isEditMode) {
+        // Düzenleme
+        const response = await fetch(`/api/tours/${formData.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formData)
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          setTours(tours.map(tour => 
+            tour.id === formData.id ? result.tour : tour
+          ));
+          setSuccessMessage('Tur başarıyla güncellendi!');
+        } else {
+          throw new Error('Tur güncellenemedi');
+        }
+      } else {
+        // Yeni ekleme
+        const response = await fetch('/api/tours', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formData)
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          setTours([...tours, result.tour]);
+          setSuccessMessage('Tur başarıyla eklendi!');
+        } else {
+          throw new Error('Tur eklenemedi');
+        }
+      }
+
+      // Formu sıfırla
+      setFormData({
+        id: null,
+        category: '',
+        title: '',
+        image: '',
+        startDate: '',
+        endDate: '',
+        price: '',
+        description: ''
+      });
+      setImageFile(null);
+      setImagePreview('');
+      setIsEditMode(false);
+      setOpenDialog(false);
+
+      // Success mesajını 3 saniye sonra kaldır
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (error) {
+      console.error('Tur işlemi hatası:', error);
+      setError('Tur işlemi sırasında hata oluştu');
     }
-
-    // Formu sıfırla
-    setFormData({
-      id: null,
-      category: '',
-      title: '',
-      image: '',
-      startDate: '',
-      endDate: '',
-      price: '',
-      description: ''
-    });
-    setImageFile(null);
-    setImagePreview('');
-    setIsEditMode(false);
-    setOpenDialog(false);
-
-    // Success mesajını 3 saniye sonra kaldır
-    setTimeout(() => setSuccessMessage(''), 3000);
   };
 
   const handleEdit = (tour) => {
@@ -315,13 +332,24 @@ const AdminPanel = () => {
     setOpenDialog(true);
   };
 
-  const handleDelete = (tourId) => {
+  const handleDelete = async (tourId) => {
     if (window.confirm('Bu turu silmek istediğinizden emin misiniz?')) {
-      const updatedTours = tours.filter(tour => tour.id !== tourId);
-      setTours(updatedTours);
-      localStorage.setItem('adminTours', JSON.stringify(updatedTours));
-      setSuccessMessage('Tur başarıyla silindi!');
-      setTimeout(() => setSuccessMessage(''), 3000);
+      try {
+        const response = await fetch(`/api/tours/${tourId}`, {
+          method: 'DELETE'
+        });
+        
+        if (response.ok) {
+          setTours(tours.filter(tour => tour.id !== tourId));
+          setSuccessMessage('Tur başarıyla silindi!');
+          setTimeout(() => setSuccessMessage(''), 3000);
+        } else {
+          throw new Error('Tur silinemedi');
+        }
+      } catch (error) {
+        console.error('Tur silme hatası:', error);
+        setError('Tur silinirken hata oluştu');
+      }
     }
   };
 
