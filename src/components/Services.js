@@ -5,7 +5,6 @@ import {
   Card,
   CardContent,
   Typography,
-  Grid,
 } from '@mui/material';
 import {
   Hotel as BedIcon,

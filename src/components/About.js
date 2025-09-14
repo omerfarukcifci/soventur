@@ -5,7 +5,6 @@ import {
   Typography,
   Grid,
   Card,
-  CardContent,
   Stack,
 } from '@mui/material';
 const About = () => {
