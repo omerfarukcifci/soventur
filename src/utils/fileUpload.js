@@ -56,14 +56,14 @@ export const formatFileSize = (bytes) => {
 // Dosya tipini kontrol et
 export const validateImageFile = (file) => {
   const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-  const maxSize = 5 * 1024 * 1024; // 5MB
+  const maxSize = 1 * 1024 * 1024; // 1MB (Vercel base64 için)
   
   if (!allowedTypes.includes(file.type)) {
     return { valid: false, message: 'Sadece JPEG, PNG, GIF ve WebP formatları desteklenir.' };
   }
   
   if (file.size > maxSize) {
-    return { valid: false, message: 'Dosya boyutu 5MB\'dan küçük olmalıdır.' };
+    return { valid: false, message: 'Dosya boyutu 1MB\'dan küçük olmalıdır. (Vercel limiti)' };
   }
   
   return { valid: true, message: 'Dosya geçerli.' };

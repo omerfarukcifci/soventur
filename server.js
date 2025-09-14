@@ -69,6 +69,16 @@ app.post('/api/upload', (req, res) => {
       return res.status(400).json({ error: 'Geçersiz resim formatı' });
     }
     
+    // Dosya boyutu kontrolü (base64 için ~1.3MB limit)
+    const base64Size = imageData.length;
+    const maxSize = 1.3 * 1024 * 1024; // 1.3MB
+    
+    if (base64Size > maxSize) {
+      return res.status(413).json({ 
+        error: `Dosya boyutu çok büyük. Maksimum 1MB resim yükleyebilirsiniz. (Mevcut: ${Math.round(base64Size / 1024)}KB)` 
+      });
+    }
+    
     res.json({
       success: true,
       imageUrl: imageData,
