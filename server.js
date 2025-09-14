@@ -2,8 +2,7 @@ const express = require('express');
 const path = require('path');
 const cors = require('cors');
 const multer = require('multer');
-const { put } = require('@vercel/blob');
-const { sql } = require('@vercel/postgres');
+const { put, get, del } = require('@vercel/blob');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -43,44 +42,39 @@ const upload = multer({
 // React build dosyalarını serve et
 app.use(express.static(path.join(__dirname, 'build')));
 
-// Vercel Postgres veritabanı tablolarını oluştur
-async function initializeDatabase() {
+// Blob Storage'da veri dosyalarını yönet
+const DATA_FILES = {
+  tours: 'data/tours.json',
+  customers: 'data/customers.json'
+};
+
+// Veri dosyasını oku
+async function readDataFile(filename) {
   try {
-    // Tours tablosu
-    await sql`
-      CREATE TABLE IF NOT EXISTS tours (
-        id SERIAL PRIMARY KEY,
-        title VARCHAR(255) NOT NULL,
-        description TEXT,
-        price DECIMAL(10,2),
-        duration VARCHAR(100),
-        image TEXT,
-        date VARCHAR(100),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `;
-    
-    // Customers tablosu
-    await sql`
-      CREATE TABLE IF NOT EXISTS customers (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        email VARCHAR(255) NOT NULL,
-        phone VARCHAR(20),
-        tour_id INTEGER REFERENCES tours(id),
-        message TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `;
-    
-    console.log('Database tables initialized successfully');
+    const blob = await get(filename);
+    const text = await blob.text();
+    return JSON.parse(text);
   } catch (error) {
-    console.error('Database initialization error:', error);
+    console.log(`Data file ${filename} not found, returning empty array`);
+    return [];
   }
 }
 
-// Veritabanını başlat
-initializeDatabase();
+// Veri dosyasını yaz
+async function writeDataFile(filename, data) {
+  try {
+    const jsonString = JSON.stringify(data, null, 2);
+    const blob = await put(filename, jsonString, {
+      access: 'public',
+      contentType: 'application/json'
+    });
+    console.log(`Data file ${filename} updated successfully`);
+    return blob;
+  } catch (error) {
+    console.error(`Error writing data file ${filename}:`, error);
+    throw error;
+  }
+}
 
 // Dosya yükleme endpoint'i - Vercel Blob Storage ile
 app.post('/api/upload', async (req, res) => {
@@ -149,8 +143,8 @@ app.post('/api/upload', async (req, res) => {
 // Tur yönetimi endpoint'leri
 app.get('/api/tours', async (req, res) => {
   try {
-    const result = await sql`SELECT * FROM tours ORDER BY created_at DESC`;
-    res.json(result.rows);
+    const tours = await readDataFile(DATA_FILES.tours);
+    res.json(tours);
   } catch (error) {
     console.error('Tur listesi getirme hatası:', error);
     res.status(500).json({ error: 'Tur listesi getirilirken hata oluştu' });
@@ -161,13 +155,24 @@ app.post('/api/tours', async (req, res) => {
   try {
     const { title, description, price, duration, image, date } = req.body;
     
-    const result = await sql`
-      INSERT INTO tours (title, description, price, duration, image, date)
-      VALUES (${title}, ${description}, ${price}, ${duration}, ${image}, ${date})
-      RETURNING *
-    `;
+    // Mevcut turları oku
+    const tours = await readDataFile(DATA_FILES.tours);
     
-    const newTour = result.rows[0];
+    // Yeni tur oluştur
+    const newTour = {
+      id: Date.now().toString(),
+      title,
+      description,
+      price: parseFloat(price),
+      duration,
+      image,
+      date,
+      createdAt: new Date().toISOString()
+    };
+    
+    // Turları güncelle
+    tours.push(newTour);
+    await writeDataFile(DATA_FILES.tours, tours);
     
     res.json({
       success: true,
@@ -210,11 +215,18 @@ app.delete('/api/tours/:id', async (req, res) => {
   try {
     const tourId = req.params.id;
     
-    const result = await sql`DELETE FROM tours WHERE id = ${tourId} RETURNING *`;
+    // Mevcut turları oku
+    const tours = await readDataFile(DATA_FILES.tours);
     
-    if (result.rows.length === 0) {
+    // Turu bul ve sil
+    const tourIndex = tours.findIndex(tour => tour.id === tourId);
+    
+    if (tourIndex === -1) {
       return res.status(404).json({ error: 'Tur bulunamadı' });
     }
+    
+    tours.splice(tourIndex, 1);
+    await writeDataFile(DATA_FILES.tours, tours);
     
     res.json({
       success: true,
@@ -231,13 +243,23 @@ app.post('/api/customers', async (req, res) => {
   try {
     const { name, email, phone, tourId, message } = req.body;
     
-    const result = await sql`
-      INSERT INTO customers (name, email, phone, tour_id, message)
-      VALUES (${name}, ${email}, ${phone}, ${tourId}, ${message})
-      RETURNING *
-    `;
+    // Mevcut müşterileri oku
+    const customers = await readDataFile(DATA_FILES.customers);
     
-    const customerData = result.rows[0];
+    // Yeni müşteri oluştur
+    const customerData = {
+      id: Date.now().toString(),
+      name,
+      email,
+      phone,
+      tourId,
+      message,
+      createdAt: new Date().toISOString()
+    };
+    
+    // Müşterileri güncelle
+    customers.push(customerData);
+    await writeDataFile(DATA_FILES.customers, customers);
 
     res.json({
       success: true,
@@ -258,13 +280,8 @@ app.post('/api/customers', async (req, res) => {
 // Müşteri kayıtlarını getirme endpoint'i
 app.get('/api/customers', async (req, res) => {
   try {
-    const result = await sql`
-      SELECT c.*, t.title as tour_title 
-      FROM customers c 
-      LEFT JOIN tours t ON c.tour_id = t.id 
-      ORDER BY c.created_at DESC
-    `;
-    res.json(result.rows);
+    const customers = await readDataFile(DATA_FILES.customers);
+    res.json(customers);
   } catch (error) {
     console.error('Müşteri kayıtları getirme hatası:', error);
     res.status(500).json({
