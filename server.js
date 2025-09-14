@@ -207,6 +207,8 @@ app.use((req, res) => {
   // Build dosyasının varlığını kontrol et
   const indexPath = path.join(__dirname, 'build', 'index.html');
   console.log('Looking for index.html at:', indexPath);
+  console.log('__dirname:', __dirname);
+  console.log('Files in __dirname:', require('fs').readdirSync(__dirname));
   
   res.sendFile(indexPath, (err) => {
     if (err) {
