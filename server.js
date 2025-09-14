@@ -204,7 +204,7 @@ app.use((req, res) => {
     return res.status(404).json({ error: 'API endpoint bulunamadı' });
   }
   
-  // Vercel'de build dosyası yolu - outputDirectory: "build" kullandığımız için
+  // Vercel'de build dosyası yolu - vercel-build script ile build edildiği için
   const indexPath = path.join(process.cwd(), 'build', 'index.html');
   
   console.log('Looking for index.html at:', indexPath);
