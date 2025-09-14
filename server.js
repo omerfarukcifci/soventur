@@ -195,12 +195,25 @@ app.get('/api/customers', (req, res) => {
 });
 
 // React uygulamasını serve et (SPA routing için) - API route'larından sonra
-app.get('*', (req, res) => {
+app.use((req, res) => {
+  console.log('Request path:', req.path);
+  console.log('Request method:', req.method);
+  
   // API route'larını atla
   if (req.path.startsWith('/api/')) {
     return res.status(404).json({ error: 'API endpoint bulunamadı' });
   }
-  res.sendFile(path.join(__dirname, 'build', 'index.html'));
+  
+  // Build dosyasının varlığını kontrol et
+  const indexPath = path.join(__dirname, 'build', 'index.html');
+  console.log('Looking for index.html at:', indexPath);
+  
+  res.sendFile(indexPath, (err) => {
+    if (err) {
+      console.error('Error sending index.html:', err);
+      res.status(500).send('Internal Server Error');
+    }
+  });
 });
 
 // Vercel için export
