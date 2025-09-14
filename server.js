@@ -57,24 +57,24 @@ app.post('/api/upload', (req, res) => {
     console.log('Content-Type:', req.headers['content-type']);
     console.log('Body keys:', Object.keys(req.body));
     
-    // Vercel'de Multer çalışmıyor, alternatif yaklaşım
-    if (!req.headers['content-type'] || !req.headers['content-type'].includes('multipart/form-data')) {
-      return res.status(400).json({ error: 'Content-Type multipart/form-data olmalı' });
+    // Vercel'de Multer çalışmıyor, base64 ile çalışalım
+    const { imageData } = req.body;
+    
+    if (!imageData) {
+      return res.status(400).json({ error: 'Resim verisi gerekli' });
     }
     
-    // Geçici çözüm: URL ile resim yükleme
-    const { imageUrl } = req.body;
-    
-    if (!imageUrl) {
-      return res.status(400).json({ error: 'Resim URL\'i gerekli' });
+    // Base64 verisini kontrol et
+    if (!imageData.startsWith('data:image/')) {
+      return res.status(400).json({ error: 'Geçersiz resim formatı' });
     }
     
     res.json({
       success: true,
-      imageUrl: imageUrl,
+      imageUrl: imageData,
       filename: 'uploaded_image.jpg',
       originalName: 'uploaded_image.jpg',
-      size: 0
+      size: imageData.length
     });
   } catch (error) {
     console.error('Dosya yükleme hatası:', error);

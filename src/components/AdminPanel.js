@@ -197,66 +197,72 @@ const AdminPanel = () => {
     };
     reader.readAsDataURL(file);
 
-    // Gerçek dosya yükleme
+    // Gerçek dosya yükleme - Vercel için base64 ile
     setUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append('image', file);
-      
-      console.log('Dosya yükleniyor:', file.name);
-      
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-        headers: {
-          // Content-Type header'ını manuel olarak eklemeyin, FormData otomatik olarak ayarlar
+    
+    // Dosyayı base64'e çevir ve yükle
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const imageData = e.target.result;
+        
+        console.log('Dosya yükleniyor:', file.name);
+        
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ imageData })
+        });
+        
+        console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Server error response:', errorText);
+          throw new Error(`Dosya yükleme başarısız: ${response.status} - ${errorText}`);
         }
-      });
-      
-      console.log('Response status:', response.status);
-      console.log('Response headers:', response.headers);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Server error response:', errorText);
-        throw new Error(`Dosya yükleme başarısız: ${response.status} - ${errorText}`);
+        
+        const result = await response.json();
+        console.log('Upload result:', result);
+        
+        if (!result.success) {
+          throw new Error(result.error || 'Dosya yükleme başarısız');
+        }
+        
+        setFormData(prev => ({
+          ...prev,
+          image: result.imageUrl
+        }));
+        
+        console.log('Görsel başarıyla yüklendi:', result.imageUrl);
+        alert('Görsel başarıyla yüklendi!');
+        
+      } catch (error) {
+        console.error('Görsel yükleme hatası:', error);
+        
+        // Hata türüne göre farklı mesajlar
+        let errorMessage = 'Görsel yüklenirken bir hata oluştu.';
+        
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+          errorMessage = 'Server bağlantı hatası. Lütfen server\'ın çalıştığından emin olun.';
+        } else if (error.message.includes('400')) {
+          errorMessage = 'Dosya formatı desteklenmiyor veya dosya bozuk.';
+        } else if (error.message.includes('413')) {
+          errorMessage = 'Dosya boyutu çok büyük (max 5MB).';
+        } else if (error.message.includes('500')) {
+          errorMessage = 'Server hatası. Lütfen tekrar deneyin.';
+        }
+        
+        alert(`${errorMessage}\n\nHata detayı: ${error.message}\n\nLütfen görsel URL'sini manuel olarak girin.`);
+      } finally {
+        setUploading(false);
       }
-      
-      const result = await response.json();
-      console.log('Upload result:', result);
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Dosya yükleme başarısız');
-      }
-      
-      setFormData(prev => ({
-        ...prev,
-        image: result.imageUrl
-      }));
-      
-      console.log('Görsel başarıyla yüklendi:', result.imageUrl);
-      alert('Görsel başarıyla yüklendi!');
-      
-    } catch (error) {
-      console.error('Görsel yükleme hatası:', error);
-      
-      // Hata türüne göre farklı mesajlar
-      let errorMessage = 'Görsel yüklenirken bir hata oluştu.';
-      
-      if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        errorMessage = 'Server bağlantı hatası. Lütfen server\'ın çalıştığından emin olun.';
-      } else if (error.message.includes('400')) {
-        errorMessage = 'Dosya formatı desteklenmiyor veya dosya bozuk.';
-      } else if (error.message.includes('413')) {
-        errorMessage = 'Dosya boyutu çok büyük (max 5MB).';
-      } else if (error.message.includes('500')) {
-        errorMessage = 'Server hatası. Lütfen tekrar deneyin.';
-      }
-      
-      alert(`${errorMessage}\n\nHata detayı: ${error.message}\n\nLütfen görsel URL'sini manuel olarak girin.`);
-    } finally {
-      setUploading(false);
-    }
+    };
+    
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = async (e) => {
