@@ -29,17 +29,8 @@ app.use('/images', express.static(path.join(__dirname, 'public/images')));
 // React build dosyalarını serve et
 app.use(express.static(path.join(__dirname, 'build')));
 
-// Multer konfigürasyonu - dosya yükleme
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'public/images/');
-  },
-  filename: (req, file, cb) => {
-    // Dosya adını oluştur: timestamp_originalname
-    const uniqueSuffix = Date.now() + '_' + Math.round(Math.random() * 1E9);
-    cb(null, 'tour_' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// Multer konfigürasyonu - dosya yükleme (Vercel için memory storage)
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage: storage,
@@ -63,13 +54,14 @@ app.post('/api/upload', upload.single('image'), (req, res) => {
       return res.status(400).json({ error: 'Dosya yüklenmedi' });
     }
 
-    // Yüklenen dosyanın URL'ini döndür
-    const imageUrl = `/images/${req.file.filename}`;
+    // Vercel'de dosya yazma yerine base64 döndür
+    const base64 = req.file.buffer.toString('base64');
+    const imageUrl = `data:${req.file.mimetype};base64,${base64}`;
     
     res.json({
       success: true,
       imageUrl: imageUrl,
-      filename: req.file.filename,
+      filename: req.file.originalname,
       originalName: req.file.originalname,
       size: req.file.size
     });
@@ -89,22 +81,12 @@ app.post('/api/customers', (req, res) => {
       registrationDate: new Date().toISOString()
     };
 
-    // Müşteri kayıtlarını dosyaya yaz
-    const customersFile = path.join(__dirname, 'data', 'customers.json');
-    
-    // data klasörünü oluştur
-    if (!fs.existsSync(path.join(__dirname, 'data'))) {
-      fs.mkdirSync(path.join(__dirname, 'data'));
+    // Vercel'de dosya yazma yerine memory'de tut
+    if (!global.customers) {
+      global.customers = [];
     }
 
-    let customers = [];
-    if (fs.existsSync(customersFile)) {
-      const data = fs.readFileSync(customersFile, 'utf8');
-      customers = JSON.parse(data);
-    }
-
-    customers.push(customerData);
-    fs.writeFileSync(customersFile, JSON.stringify(customers, null, 2));
+    global.customers.push(customerData);
 
     res.json({
       success: true,
@@ -125,17 +107,13 @@ app.post('/api/customers', (req, res) => {
 // Müşteri kayıtlarını getirme endpoint'i
 app.get('/api/customers', (req, res) => {
   try {
-    const customersFile = path.join(__dirname, 'data', 'customers.json');
-    
-    if (!fs.existsSync(customersFile)) {
-      return res.json([]);
+    // Vercel'de memory'den oku
+    if (!global.customers) {
+      global.customers = [];
     }
 
-    const data = fs.readFileSync(customersFile, 'utf8');
-    const customers = JSON.parse(data);
-    
     // Tarihe göre sırala (en yeni önce)
-    customers.sort((a, b) => new Date(b.registrationDate) - new Date(a.registrationDate));
+    const customers = global.customers.sort((a, b) => new Date(b.registrationDate) - new Date(a.registrationDate));
 
     res.json(customers);
 
