@@ -273,7 +273,6 @@ const AdminPanel = () => {
         });
         
         if (response.ok) {
-          const result = await response.json();
           // API'den güncel listeyi çek
           const toursResponse = await fetch('/api/tours');
           if (toursResponse.ok) {
@@ -295,7 +294,6 @@ const AdminPanel = () => {
         });
         
         if (response.ok) {
-          const result = await response.json();
           // API'den güncel listeyi çek
           const toursResponse = await fetch('/api/tours');
           if (toursResponse.ok) {
