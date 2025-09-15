@@ -297,13 +297,34 @@ const AdminPanel = () => {
         });
         
         if (response.ok) {
-          // API'den güncel listeyi çek
-          const toursResponse = await fetch('/api/tours');
-          if (toursResponse.ok) {
-            const updatedTours = await toursResponse.json();
-            setTours(updatedTours);
-          }
+          const result = await response.json();
+          console.log('Tour POST response successful');
+          
+          // Optimistic Update - Hemen UI'yi güncelle
+          const newTour = result.tour;
+          setTours(prevTours => [...prevTours, newTour]);
           setSuccessMessage('Tur başarıyla eklendi!');
+          
+          // Ana sayfa için optimistic data'yı localStorage'a kaydet
+          const updatedTours = [...tours, newTour];
+          localStorage.setItem('optimisticTours', JSON.stringify(updatedTours));
+          console.log('[ADMIN] Optimistic data saved to localStorage');
+          
+          // Arka planda gerçek veriyi kontrol et (5 saniye sonra)
+          setTimeout(async () => {
+            try {
+              const toursResponse = await fetch('/api/tours');
+              if (toursResponse.ok) {
+                const updatedTours = await toursResponse.json();
+                setTours(updatedTours);
+                // Ana sayfa için de güncelle
+                localStorage.setItem('optimisticTours', JSON.stringify(updatedTours));
+                console.log('Tours synced with server and localStorage');
+              }
+            } catch (error) {
+              console.log('Background sync failed:', error);
+            }
+          }, 5000);
         } else {
           throw new Error('Tur eklenemedi');
         }
@@ -311,7 +332,6 @@ const AdminPanel = () => {
 
       // Formu sıfırla
       setFormData({
-        id: null,
         category: '',
         title: '',
         image: '',

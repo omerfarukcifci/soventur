@@ -33,9 +33,34 @@ const Tours = () => {
   useEffect(() => {
     const fetchTours = async () => {
       try {
+        // Önce localStorage'dan optimistic data'yı kontrol et
+        const optimisticTours = localStorage.getItem('optimisticTours');
+        let toursData = [];
+        
+        if (optimisticTours) {
+          try {
+            toursData = JSON.parse(optimisticTours);
+            console.log('[TOURS] Using optimistic data:', toursData.length, 'tours');
+          } catch (error) {
+            console.log('[TOURS] Invalid optimistic data, fetching from API');
+          }
+        }
+        
+        // API'den gerçek veriyi al
         const response = await fetch('/api/tours');
         if (response.ok) {
-          const toursData = await response.json();
+          const apiToursData = await response.json();
+          console.log('[TOURS] API data:', apiToursData.length, 'tours');
+          
+          // Eğer API'de daha fazla veri varsa, optimistic data'yı güncelle
+          if (apiToursData.length >= toursData.length) {
+            toursData = apiToursData;
+            // Optimistic data'yı temizle
+            localStorage.removeItem('optimisticTours');
+            console.log('[TOURS] Using API data, cleared optimistic data');
+          } else {
+            console.log('[TOURS] Using optimistic data, API not yet synced');
+          }
           
           // Turları kategorilere göre grupla
           const categories = {
