@@ -46,27 +46,18 @@ const Tours = () => {
           };
 
           toursData.forEach(tour => {
-            // Kategori belirleme (title'a göre)
-            let category = 'umre'; // varsayılan
-            if (tour.title.toLowerCase().includes('hac')) {
-              category = 'hac';
-            } else if (tour.title.toLowerCase().includes('istanbul') || 
-                      tour.title.toLowerCase().includes('bursa') || 
-                      tour.title.toLowerCase().includes('konya')) {
-              category = 'yurtici';
-            } else if (tour.title.toLowerCase().includes('endülüs') || 
-                      tour.title.toLowerCase().includes('bosna')) {
-              category = 'yurtdisi';
-            }
+            // Veritabanından gelen category alanını kullan
+            const category = tour.category || 'umre'; // varsayılan
 
             if (categories[category]) {
               categories[category].tours.push({
                 name: tour.title,
                 date: tour.date || 'Tarih belirtilmemiş',
                 startDate: tour.date, // Tarih filtresi için
-                price: `₺${tour.price?.toLocaleString() || '0'}`,
+                price: tour.price ? `₺${tour.price.toLocaleString()}` : 'Fiyat belirtilmemiş',
                 image: tour.image,
-                description: tour.description
+                description: tour.description,
+                duration: tour.duration || 'Süre belirtilmemiş'
               });
             }
           });
@@ -463,6 +454,9 @@ const Tours = () => {
                                 {tour.date}
                               </Typography>
                             </Stack>
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontWeight: 'medium' }}>
+                              {tour.duration}
+                            </Typography>
                             <Typography variant="body2" color="text.secondary" sx={{ mb: 2, flexGrow: 1 }}>
                               {tour.description}
                             </Typography>
