@@ -53,26 +53,28 @@ const DATA_FILES = {
   customers: 'data/customers.json'
 };
 
-// Veri dosyasını oku (Vercel Blob Storage uyumlu)
+// Veri dosyasını oku (Direct URL approach)
 async function readDataFile(filename) {
   try {
     console.log(`[READ] Attempting to read ${filename}...`);
     
-    // Vercel Blob Storage'dan oku
-    const blob = await get(filename);
-    console.log(`[READ] Blob response:`, blob);
+    // Direct URL ile oku
+    const url = `https://vxgzddnebpvjmwxr.public.blob.vercel-storage.com/${filename}`;
+    console.log(`[READ] Fetching from URL: ${url}`);
     
-    if (!blob) {
-      console.log(`[READ] Blob not found for ${filename}`);
+    const response = await fetch(url);
+    console.log(`[READ] Response status: ${response.status}`);
+    
+    if (!response.ok) {
+      console.log(`[READ] HTTP error: ${response.status}`);
       return [];
     }
     
-    // Blob'dan text al
-    const text = await blob.text();
-    console.log(`[READ] Blob text length:`, text.length);
+    const text = await response.text();
+    console.log(`[READ] Text length: ${text.length}`);
     
     if (!text || text.trim() === '') {
-      console.log(`[READ] Empty blob content for ${filename}`);
+      console.log(`[READ] Empty content for ${filename}`);
       return [];
     }
     
@@ -243,9 +245,9 @@ app.post('/api/tours', async (req, res) => {
     };
     console.log('[POST /api/tours] New tour created:', newTour.id, newTour.title);
     
-    // Turları güncelle
-    tours.push(newTour);
-    console.log('[POST /api/tours] Tours array after push:', tours.length);
+      // Turları güncelle
+      tours.push(newTour);
+      console.log('[POST /api/tours] Tours array after push:', tours.length);
     
     console.log('[POST /api/tours] Calling writeDataFile...');
     await writeDataFile(DATA_FILES.tours, tours);
