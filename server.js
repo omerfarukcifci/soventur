@@ -210,8 +210,8 @@ app.get('/api/tours', async (req, res) => {
 app.post('/api/tours', async (req, res) => {
   try {
     console.log('[POST /api/tours] Starting tour creation...');
-    const { title, description, price, duration, image, date } = req.body;
-    console.log('[POST /api/tours] Request data:', { title, price, duration, date });
+    const { title, description, price, duration, image, date, category } = req.body;
+    console.log('[POST /api/tours] Request data:', { title, price, duration, date, category });
     
     // Mevcut turları oku
     console.log('[POST /api/tours] Reading existing tours...');
@@ -227,6 +227,7 @@ app.post('/api/tours', async (req, res) => {
       duration,
       image,
       date,
+      category,
       createdAt: new Date().toISOString()
     };
     console.log('[POST /api/tours] New tour created:', newTour.id, newTour.title);
@@ -256,7 +257,7 @@ app.post('/api/tours', async (req, res) => {
 app.put('/api/tours/:id', async (req, res) => {
   try {
     const tourId = req.params.id;
-    const { title, description, price, duration, image, date } = req.body;
+    const { title, description, price, duration, image, date, category } = req.body;
     
     // Mevcut turları oku
     const tours = await readDataFile(DATA_FILES.tours);
@@ -276,6 +277,7 @@ app.put('/api/tours/:id', async (req, res) => {
       duration,
       image,
       date,
+      category,
       updatedAt: new Date().toISOString()
     };
     

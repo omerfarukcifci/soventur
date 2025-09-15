@@ -63,7 +63,9 @@ const AdminPanel = () => {
     startDate: '',
     endDate: '',
     price: '',
-    description: ''
+    description: '',
+    duration: '',
+    date: ''
   });
   const [isEditMode, setIsEditMode] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
@@ -812,7 +814,7 @@ const AdminPanel = () => {
                 </Grid>
 
                 <Grid container spacing={2}>
-                  <Grid item xs={12}>
+                  <Grid item xs={6}>
                     <TextField
                       fullWidth
                       label="Fiyat"
@@ -822,6 +824,30 @@ const AdminPanel = () => {
                       required
                       placeholder="Örnek: ₺8,500"
                       helperText="Tur fiyatını girin (₺ sembolü ile)"
+                    />
+                  </Grid>
+                  <Grid item xs={6}>
+                    <TextField
+                      fullWidth
+                      label="Süre"
+                      name="duration"
+                      value={formData.duration}
+                      onChange={handleChange}
+                      required
+                      placeholder="Örnek: 7 Gün 6 Gece"
+                      helperText="Tur süresini girin"
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth
+                      label="Tur Tarihi"
+                      name="date"
+                      value={formData.date}
+                      onChange={handleChange}
+                      required
+                      placeholder="Örnek: 15 Mart 2025"
+                      helperText="Tur tarihini girin"
                     />
                   </Grid>
                 </Grid>
