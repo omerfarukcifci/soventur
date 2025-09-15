@@ -210,8 +210,8 @@ app.get('/api/tours', async (req, res) => {
 app.post('/api/tours', async (req, res) => {
   try {
     console.log('[POST /api/tours] Starting tour creation...');
-    const { title, description, price, duration, image, date, category } = req.body;
-    console.log('[POST /api/tours] Request data:', { title, price, duration, date, category });
+    const { title, description, price, image, startDate, endDate, category } = req.body;
+    console.log('[POST /api/tours] Request data:', { title, price, startDate, endDate, category });
     
     // Mevcut turları oku
     console.log('[POST /api/tours] Reading existing tours...');
@@ -224,9 +224,9 @@ app.post('/api/tours', async (req, res) => {
       title,
       description,
       price: parseFloat(price),
-      duration,
       image,
-      date,
+      startDate,
+      endDate,
       category,
       createdAt: new Date().toISOString()
     };
@@ -257,7 +257,7 @@ app.post('/api/tours', async (req, res) => {
 app.put('/api/tours/:id', async (req, res) => {
   try {
     const tourId = req.params.id;
-    const { title, description, price, duration, image, date, category } = req.body;
+    const { title, description, price, image, startDate, endDate, category } = req.body;
     
     // Mevcut turları oku
     const tours = await readDataFile(DATA_FILES.tours);
@@ -274,9 +274,9 @@ app.put('/api/tours/:id', async (req, res) => {
       title,
       description,
       price: parseFloat(price),
-      duration,
       image,
-      date,
+      startDate,
+      endDate,
       category,
       updatedAt: new Date().toISOString()
     };

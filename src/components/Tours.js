@@ -52,12 +52,11 @@ const Tours = () => {
             if (categories[category]) {
               categories[category].tours.push({
                 name: tour.title,
-                date: tour.date || 'Tarih belirtilmemiş',
-                startDate: tour.date, // Tarih filtresi için
+                date: tour.startDate && tour.endDate ? `${tour.startDate} - ${tour.endDate}` : 'Tarih belirtilmemiş',
+                startDate: tour.startDate, // Tarih filtresi için
                 price: tour.price ? `₺${tour.price.toLocaleString()}` : 'Fiyat belirtilmemiş',
                 image: tour.image,
-                description: tour.description,
-                duration: tour.duration || 'Süre belirtilmemiş'
+                description: tour.description
               });
             }
           });
@@ -454,9 +453,6 @@ const Tours = () => {
                                 {tour.date}
                               </Typography>
                             </Stack>
-                            <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontWeight: 'medium' }}>
-                              {tour.duration}
-                            </Typography>
                             <Typography variant="body2" color="text.secondary" sx={{ mb: 2, flexGrow: 1 }}>
                               {tour.description}
                             </Typography>
