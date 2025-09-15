@@ -285,6 +285,10 @@ const AdminPanel = () => {
         }
       } else {
         // Yeni ekleme
+        console.log('[ADMIN] FormData before submit:', formData);
+        console.log('[ADMIN] FormData keys:', Object.keys(formData));
+        console.log('[ADMIN] FormData values:', Object.values(formData));
+        
         const response = await fetch('/api/tours', {
           method: 'POST',
           headers: {

@@ -210,8 +210,12 @@ app.get('/api/tours', async (req, res) => {
 app.post('/api/tours', async (req, res) => {
   try {
     console.log('[POST /api/tours] Starting tour creation...');
+    console.log('[POST /api/tours] Full request body:', req.body);
+    console.log('[POST /api/tours] Request body keys:', Object.keys(req.body));
+    console.log('[POST /api/tours] Request body values:', Object.values(req.body));
+    
     const { title, description, price, image, startDate, endDate, category } = req.body;
-    console.log('[POST /api/tours] Request data:', { title, price, startDate, endDate, category });
+    console.log('[POST /api/tours] Destructured data:', { title, price, startDate, endDate, category });
     
     // Mevcut turları oku
     console.log('[POST /api/tours] Reading existing tours...');
