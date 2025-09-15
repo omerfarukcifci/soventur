@@ -56,7 +56,6 @@ const AdminPanel = () => {
   const [customers, setCustomers] = useState([]);
   const [activeTab, setActiveTab] = useState(0);
   const [formData, setFormData] = useState({
-    id: null,
     category: '',
     title: '',
     image: '',

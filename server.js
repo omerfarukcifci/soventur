@@ -108,20 +108,9 @@ async function writeDataFile(filename, data) {
     console.log(`[WRITE] SUCCESS: ${filename} written to ${blob.url}`);
     console.log(`[WRITE] Blob URL: ${blob.url}`);
     
-    // Verification - Direct URL ile kontrol et
-    console.log(`[WRITE] Verifying write operation...`);
-    try {
-      const verifyResponse = await fetch(blob.url);
-      if (verifyResponse.ok) {
-        const verifyText = await verifyResponse.text();
-        const verifyData = JSON.parse(verifyText);
-        console.log(`[WRITE] VERIFICATION: ${verifyData.length} items confirmed in ${filename}`);
-      } else {
-        console.log(`[WRITE] VERIFICATION FAILED: HTTP ${verifyResponse.status}`);
-      }
-    } catch (verifyError) {
-      console.log(`[WRITE] VERIFICATION ERROR:`, verifyError.message);
-    }
+    // Verification kaldırıldı - Vercel Blob Storage gecikme sorunu
+    console.log(`[WRITE] Write operation completed successfully`);
+    console.log(`[WRITE] Note: Verification disabled due to Vercel Blob Storage sync delays`);
     
     console.log(`[WRITE] Write operation completed successfully`);
     
@@ -240,6 +229,11 @@ app.post('/api/tours', async (req, res) => {
     const { title, description, price, image, startDate, endDate, category } = req.body;
     console.log('[POST /api/tours] Destructured data:', { title, description, price, image, startDate, endDate, category });
     
+    // ID alanını kontrol et ve temizle
+    if (req.body.id === null || req.body.id === undefined) {
+      console.log('[POST /api/tours] ID field is null/undefined, will be generated');
+    }
+    
     // Mevcut turları oku
     console.log('[POST /api/tours] Reading existing tours...');
     const tours = await readDataFile(DATA_FILES.tours);
@@ -265,28 +259,10 @@ app.post('/api/tours', async (req, res) => {
     
     console.log('[POST /api/tours] Calling writeDataFile...');
     
-    // Retry mekanizması ile yazma
-    let writeSuccess = false;
-    let retryCount = 0;
-    const maxRetries = 3;
-    
-    while (!writeSuccess && retryCount < maxRetries) {
-      try {
-        await writeDataFile(DATA_FILES.tours, tours);
-        writeSuccess = true;
-        console.log('[POST /api/tours] writeDataFile completed successfully');
-      } catch (error) {
-        retryCount++;
-        console.log(`[POST /api/tours] Write attempt ${retryCount} failed:`, error.message);
-        
-        if (retryCount < maxRetries) {
-          console.log(`[POST /api/tours] Retrying in 1 second...`);
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        } else {
-          throw error;
-        }
-      }
-    }
+    // Basit yazma işlemi
+    console.log('[POST /api/tours] Writing tours to Blob Storage...');
+    await writeDataFile(DATA_FILES.tours, tours);
+    console.log('[POST /api/tours] writeDataFile completed successfully');
     
     res.json({
       success: true,
