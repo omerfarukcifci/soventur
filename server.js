@@ -5,6 +5,11 @@ const multer = require('multer');
 const { put, get, del } = require('@vercel/blob');
 
 const app = express();
+
+// Blob Storage token kontrolü
+console.log('BLOB_READ_WRITE_TOKEN exists:', !!process.env.BLOB_READ_WRITE_TOKEN);
+console.log('BLOB_READ_WRITE_TOKEN length:', process.env.BLOB_READ_WRITE_TOKEN ? process.env.BLOB_READ_WRITE_TOKEN.length : 0);
+console.log('BLOB_READ_WRITE_TOKEN starts with:', process.env.BLOB_READ_WRITE_TOKEN ? process.env.BLOB_READ_WRITE_TOKEN.substring(0, 10) + '...' : 'undefined');
 const PORT = process.env.PORT || 5001;
 
 // CORS ayarları
@@ -63,16 +68,36 @@ async function readDataFile(filename) {
 // Veri dosyasını yaz
 async function writeDataFile(filename, data) {
   try {
+    console.log(`[WRITE] Attempting to write ${filename} with ${data.length} items`);
+    console.log(`[WRITE] Sample data:`, data[0] ? JSON.stringify(data[0], null, 2) : 'No data');
+    
     const jsonString = JSON.stringify(data, null, 2);
+    console.log(`[WRITE] JSON string length: ${jsonString.length} characters`);
+    
+    console.log(`[WRITE] Calling put() with filename: ${filename}`);
     const blob = await put(filename, jsonString, {
       access: 'public',
       contentType: 'application/json',
       allowOverwrite: true
     });
-    console.log(`Data file ${filename} updated successfully`);
+    
+    console.log(`[WRITE] SUCCESS: ${filename} written to ${blob.url}`);
+    console.log(`[WRITE] Blob URL: ${blob.url}`);
+    
+    // Yazma işlemini doğrula
+    console.log(`[WRITE] Verifying write operation...`);
+    const verification = await get(filename);
+    const verifyText = await verification.text();
+    const verifyData = JSON.parse(verifyText);
+    console.log(`[WRITE] VERIFICATION: ${verifyData.length} items confirmed in ${filename}`);
+    
     return blob;
   } catch (error) {
-    console.error(`Error writing data file ${filename}:`, error);
+    console.error(`[WRITE] ERROR writing ${filename}:`, error);
+    console.error(`[WRITE] Error name:`, error.name);
+    console.error(`[WRITE] Error message:`, error.message);
+    console.error(`[WRITE] Error code:`, error.code);
+    console.error(`[WRITE] Error stack:`, error.stack);
     throw error;
   }
 }
@@ -154,10 +179,14 @@ app.get('/api/tours', async (req, res) => {
 
 app.post('/api/tours', async (req, res) => {
   try {
+    console.log('[POST /api/tours] Starting tour creation...');
     const { title, description, price, duration, image, date } = req.body;
+    console.log('[POST /api/tours] Request data:', { title, price, duration, date });
     
     // Mevcut turları oku
+    console.log('[POST /api/tours] Reading existing tours...');
     const tours = await readDataFile(DATA_FILES.tours);
+    console.log('[POST /api/tours] Current tours count:', tours.length);
     
     // Yeni tur oluştur
     const newTour = {
@@ -170,10 +199,15 @@ app.post('/api/tours', async (req, res) => {
       date,
       createdAt: new Date().toISOString()
     };
+    console.log('[POST /api/tours] New tour created:', newTour.id, newTour.title);
     
     // Turları güncelle
     tours.push(newTour);
+    console.log('[POST /api/tours] Tours array after push:', tours.length);
+    
+    console.log('[POST /api/tours] Calling writeDataFile...');
     await writeDataFile(DATA_FILES.tours, tours);
+    console.log('[POST /api/tours] writeDataFile completed successfully');
     
     res.json({
       success: true,
@@ -181,8 +215,11 @@ app.post('/api/tours', async (req, res) => {
       tour: newTour
     });
   } catch (error) {
-    console.error('Tur ekleme hatası:', error);
-    res.status(500).json({ error: 'Tur eklenirken hata oluştu' });
+    console.error('[POST /api/tours] ERROR:', error);
+    console.error('[POST /api/tours] Error name:', error.name);
+    console.error('[POST /api/tours] Error message:', error.message);
+    console.error('[POST /api/tours] Error stack:', error.stack);
+    res.status(500).json({ error: 'Tur eklenirken hata oluştu: ' + error.message });
   }
 });
 
