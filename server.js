@@ -108,7 +108,21 @@ async function writeDataFile(filename, data) {
     console.log(`[WRITE] SUCCESS: ${filename} written to ${blob.url}`);
     console.log(`[WRITE] Blob URL: ${blob.url}`);
     
-    // Verification kaldırıldı - get fonksiyonu sorunu
+    // Verification - Direct URL ile kontrol et
+    console.log(`[WRITE] Verifying write operation...`);
+    try {
+      const verifyResponse = await fetch(blob.url);
+      if (verifyResponse.ok) {
+        const verifyText = await verifyResponse.text();
+        const verifyData = JSON.parse(verifyText);
+        console.log(`[WRITE] VERIFICATION: ${verifyData.length} items confirmed in ${filename}`);
+      } else {
+        console.log(`[WRITE] VERIFICATION FAILED: HTTP ${verifyResponse.status}`);
+      }
+    } catch (verifyError) {
+      console.log(`[WRITE] VERIFICATION ERROR:`, verifyError.message);
+    }
+    
     console.log(`[WRITE] Write operation completed successfully`);
     
     return blob;
@@ -250,8 +264,29 @@ app.post('/api/tours', async (req, res) => {
       console.log('[POST /api/tours] Tours array after push:', tours.length);
     
     console.log('[POST /api/tours] Calling writeDataFile...');
-    await writeDataFile(DATA_FILES.tours, tours);
-    console.log('[POST /api/tours] writeDataFile completed successfully');
+    
+    // Retry mekanizması ile yazma
+    let writeSuccess = false;
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    while (!writeSuccess && retryCount < maxRetries) {
+      try {
+        await writeDataFile(DATA_FILES.tours, tours);
+        writeSuccess = true;
+        console.log('[POST /api/tours] writeDataFile completed successfully');
+      } catch (error) {
+        retryCount++;
+        console.log(`[POST /api/tours] Write attempt ${retryCount} failed:`, error.message);
+        
+        if (retryCount < maxRetries) {
+          console.log(`[POST /api/tours] Retrying in 1 second...`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        } else {
+          throw error;
+        }
+      }
+    }
     
     res.json({
       success: true,
