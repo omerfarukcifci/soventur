@@ -53,18 +53,24 @@ const DATA_FILES = {
   customers: 'data/customers.json'
 };
 
-// Veri dosyasını oku (Cache-aware)
+// Veri dosyasını oku (Vercel Blob Storage uyumlu)
 async function readDataFile(filename) {
   try {
     console.log(`[READ] Attempting to read ${filename}...`);
+    
+    // Vercel Blob Storage'dan oku
     const blob = await get(filename);
+    console.log(`[READ] Blob response:`, blob);
     
     if (!blob) {
       console.log(`[READ] Blob not found for ${filename}`);
       return [];
     }
     
+    // Blob'dan text al
     const text = await blob.text();
+    console.log(`[READ] Blob text length:`, text.length);
+    
     if (!text || text.trim() === '') {
       console.log(`[READ] Empty blob content for ${filename}`);
       return [];
@@ -75,6 +81,7 @@ async function readDataFile(filename) {
     return data;
   } catch (error) {
     console.log(`[READ] ERROR reading ${filename}:`, error.message);
+    console.log(`[READ] Error details:`, error);
     console.log(`[READ] Returning empty array for ${filename}`);
     return [];
   }
@@ -215,7 +222,7 @@ app.post('/api/tours', async (req, res) => {
     console.log('[POST /api/tours] Request body values:', Object.values(req.body));
     
     const { title, description, price, image, startDate, endDate, category } = req.body;
-    console.log('[POST /api/tours] Destructured data:', { title, price, startDate, endDate, category });
+    console.log('[POST /api/tours] Destructured data:', { title, description, price, image, startDate, endDate, category });
     
     // Mevcut turları oku
     console.log('[POST /api/tours] Reading existing tours...');
@@ -425,7 +432,7 @@ module.exports = app;
 
 // Sadece local'de server'ı başlat
 if (process.env.NODE_ENV !== 'production') {
-  app.listen(PORT, () => {
-    console.log(`Server http://localhost:${PORT} adresinde çalışıyor`);
-  });
+app.listen(PORT, () => {
+  console.log(`Server http://localhost:${PORT} adresinde çalışıyor`);
+});
 }
