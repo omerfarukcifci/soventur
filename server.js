@@ -53,14 +53,29 @@ const DATA_FILES = {
   customers: 'data/customers.json'
 };
 
-// Veri dosyasını oku
+// Veri dosyasını oku (Cache-aware)
 async function readDataFile(filename) {
   try {
+    console.log(`[READ] Attempting to read ${filename}...`);
     const blob = await get(filename);
+    
+    if (!blob) {
+      console.log(`[READ] Blob not found for ${filename}`);
+      return [];
+    }
+    
     const text = await blob.text();
-    return JSON.parse(text);
+    if (!text || text.trim() === '') {
+      console.log(`[READ] Empty blob content for ${filename}`);
+      return [];
+    }
+    
+    const data = JSON.parse(text);
+    console.log(`[READ] SUCCESS: ${filename} loaded with ${data.length} items`);
+    return data;
   } catch (error) {
-    console.log(`Data file ${filename} not found, returning empty array`);
+    console.log(`[READ] ERROR reading ${filename}:`, error.message);
+    console.log(`[READ] Returning empty array for ${filename}`);
     return [];
   }
 }
@@ -165,11 +180,30 @@ app.post('/api/upload', async (req, res) => {
 // Tur yönetimi endpoint'leri
 app.get('/api/tours', async (req, res) => {
   try {
-    const tours = await readDataFile(DATA_FILES.tours);
+    console.log('[GET /api/tours] Starting tour fetch...');
+    
+    // Retry mekanizması - 3 deneme
+    let tours = [];
+    let attempts = 0;
+    const maxAttempts = 3;
+    
+    while (attempts < maxAttempts && tours.length === 0) {
+      attempts++;
+      console.log(`[GET /api/tours] Attempt ${attempts}/${maxAttempts}`);
+      
+      tours = await readDataFile(DATA_FILES.tours);
+      
+      if (tours.length === 0 && attempts < maxAttempts) {
+        console.log(`[GET /api/tours] No data found, waiting 1 second before retry...`);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+    
+    console.log(`[GET /api/tours] Final result: ${tours.length} tours found`);
     res.json(tours);
   } catch (error) {
-    console.error('Tur listesi getirme hatası:', error);
-    res.status(500).json({ error: 'Tur listesi getirilirken hata oluştu' });
+    console.error('[GET /api/tours] ERROR:', error);
+    res.status(500).json({ error: 'Tur listesi getirilirken hata oluştu: ' + error.message });
   }
 });
 
