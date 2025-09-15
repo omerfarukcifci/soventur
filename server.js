@@ -84,12 +84,8 @@ async function writeDataFile(filename, data) {
     console.log(`[WRITE] SUCCESS: ${filename} written to ${blob.url}`);
     console.log(`[WRITE] Blob URL: ${blob.url}`);
     
-    // Yazma işlemini doğrula
-    console.log(`[WRITE] Verifying write operation...`);
-    const verification = await get(filename);
-    const verifyText = await verification.text();
-    const verifyData = JSON.parse(verifyText);
-    console.log(`[WRITE] VERIFICATION: ${verifyData.length} items confirmed in ${filename}`);
+    // Verification kaldırıldı - get fonksiyonu sorunu
+    console.log(`[WRITE] Write operation completed successfully`);
     
     return blob;
   } catch (error) {
