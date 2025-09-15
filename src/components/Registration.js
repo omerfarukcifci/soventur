@@ -54,44 +54,44 @@ const Registration = () => {
     }
   }, [searchParams]);
 
-  const [tourTypes, setTourTypes] = useState([
-    '7 Günlük Umre Turu',
-    '10 Günlük Umre Turu', 
-    '15 Günlük Umre Turu',
-    'Ramazan Umre Turu',
-    'Hac Turu 2024',
-    'VIP Hac Turu',
-    'Aile Hac Turu',
-    'İstanbul Dini Turu',
-    'Bursa Yeşil Turu',
-    'Konya Mevlana Turu',
-    'Kudüs Turu',
-    'Endülüs Turu',
-    'Bosna Hersek Turu'
-  ]);
+  const [tourTypes, setTourTypes] = useState([]);
 
-  // Admin panelinden eklenen turları API'den yükle
+  // API'den tur verilerini çek
   useEffect(() => {
     const fetchTours = async () => {
       try {
         const response = await fetch('/api/tours');
         if (response.ok) {
           const toursData = await response.json();
-          const adminTourNames = toursData.map(tour => tour.title);
-          
-          // Admin turlarını mevcut listeye ekle (duplicate'leri önle)
-          setTourTypes(prev => {
-            const combined = [...prev, ...adminTourNames];
-            return [...new Set(combined)]; // Duplicate'leri kaldır
-          });
+          const tourNames = toursData.map(tour => tour.title);
+          setTourTypes(tourNames);
+          console.log('[REGISTRATION] Tours loaded from API:', tourNames.length);
+        } else {
+          // Fallback: Varsayılan turlar
+          setTourTypes([
+            '7 Günlük Umre Turu',
+            '10 Günlük Umre Turu', 
+            '15 Günlük Umre Turu',
+            'Ramazan Umre Turu',
+            'Hac Turu 2024'
+          ]);
         }
       } catch (error) {
-        console.error('Tur verileri yüklenemedi:', error);
+        console.error('[REGISTRATION] Error fetching tours:', error);
+        // Fallback: Varsayılan turlar
+        setTourTypes([
+          '7 Günlük Umre Turu',
+          '10 Günlük Umre Turu', 
+          '15 Günlük Umre Turu',
+          'Ramazan Umre Turu',
+          'Hac Turu 2024'
+        ]);
       }
     };
 
     fetchTours();
   }, []);
+
 
   const handleChange = (e) => {
     setFormData({
